@@ -13,8 +13,27 @@ analyseLogFile($logfile);
 function analyseLogFile($logfile)   {
 
     $gameIsFinished = false;
+    //////////////////////////////////////////////
     $players = array();
+    //
+    //Players fields:
+    //['name'] -> Steam Nickname
+    //['userId'] -> User ID of User on Server
+    //['uniqueId'] -> steamID
+    //['team'] -> The number of the team the User is in
+    //['kills'] -> Number of kills
+    //['assists'] -> Number of assists
+    //['deaths'] -> Number of deaths
+    //['headshots'] -> Number of headshots
+    //['teamkilss'] -> Number of teamkills
+    //['damage'] -> Amount of damage dealt in the match
+    /////////////////////////////////////////////
     $teams = array();
+    //
+    //['name'] -> Team name assigned before match started
+    //['team'] -> Team number
+    //['score'] -> End score of the team
+    /////////////////////////////////////////////
 
     foreach($logfile as $line) {
         $logFileObject = json_decode($line, true);
@@ -34,7 +53,7 @@ function analyseLogFile($logfile)   {
                 break;
             case "full_time":
                 foreach($logFileObject['teams'] as $team) {
-                    array_push($teams, $team);
+                    $teams[$team['team']] = $team;
                 }
                 $gameIsFinished = true;
                 break;
@@ -49,5 +68,5 @@ function analyseLogFile($logfile)   {
         }
     }
 
-    print_r($players);
+    print_r($teams[2]);
 }
