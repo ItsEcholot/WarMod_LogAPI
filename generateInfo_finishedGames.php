@@ -28,9 +28,9 @@ function analyseLogFile($logfile)   {
                 $players[$logFileObject['player']['uniqueId']]['kills'] = 0;
                 $players[$logFileObject['player']['uniqueId']]['assists'] = 0;
                 $players[$logFileObject['player']['uniqueId']]['deaths'] = 0;
-                $players[$logFileObject['player']['uniqueId']]['deaths'] = 0;
                 $players[$logFileObject['player']['uniqueId']]['headshots'] = 0;
                 $players[$logFileObject['player']['uniqueId']]['teamkills'] = 0;
+                $players[$logFileObject['player']['uniqueId']]['damage'] = 0;
                 break;
             case "full_time":
                 foreach($logFileObject['teams'] as $team) {
@@ -43,6 +43,8 @@ function analyseLogFile($logfile)   {
                 $players[$logFileObject['player']['uniqueId']]['assists'] += $logFileObject['assists'];
                 $players[$logFileObject['player']['uniqueId']]['deaths'] += $logFileObject['deaths'];
                 $players[$logFileObject['player']['uniqueId']]['headshots'] += $logFileObject['headshots'];
+                $players[$logFileObject['player']['uniqueId']]['teamkills'] += $logFileObject['tks'];
+                $players[$logFileObject['player']['uniqueId']]['damage'] += $logFileObject['damage'];
                 break;
         }
     }
