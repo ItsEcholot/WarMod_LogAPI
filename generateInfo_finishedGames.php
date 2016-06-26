@@ -7,9 +7,45 @@
 
 ini_set("auto_detect_line_endings", true);
 
-$logfile = file("testLog.log");
-analyseLogFile($logfile);
+analyseAllLogFilesInDirectory();
+function analyseAllLogFilesInDirectory()    {
+    $files = glob("*.log", GLOB_BRACE);
 
+//Define your database settings here
+    $mysqlConnection = new mysqli($servername, $username, $password, $dbname);
+
+    foreach($files as $fileName) {
+        $logfile = file($fileName);
+
+        $mysqlRow = $mysqlConnection->query("SELECT gameIsFinished FROM warMod_matches WHERE fileName='".substr($fileName, 0, -4)."' LIMIT 1");
+
+        if ($mysqlRow->num_rows == 0) {
+            $result = analyseLogFile($logfile);
+
+            $mysqlConnection->query("INSERT INTO warMod_matches (fileName, gameIsFinished) VALUES ('".substr($fileName, 0, -4)."', ".$result['gameIsFinished'].")");
+            $warMod_matchId = $mysqlConnection->insert_id;
+
+            $warMod_teamIds = array();
+            foreach($result['teams'] as $team)  {
+                $mysqlConnection->query("INSERT INTO warMod_teams (matchId, name, team, score) VALUES (".$warMod_matchId.", '".$team['name']."', ".$team['team'].", ".$team['score'].")");
+                $warMod_teamIds[$team['team']] = $mysqlConnection->insert_id;
+            }
+
+            foreach($result['players'] as $player)  {
+                $mysqlConnection->query("INSERT INTO warMod_players (matchId, teamId, name, userId, uniqueId, team, kills, assists, deaths, headshots, teamkills, damage) VALUES (".$warMod_matchId.", ".$warMod_teamIds[$player['team']].", '".$player['name']."', ".$player['userId'].", '".$player['uniqueId']."', ".$player['team'].", ".$player['kills'].", ".$player['assists'].", ".$player['deaths'].", ".$player['headshots'].", ".$player['teamkills'].", ".$player['damage'].")");
+            }
+        }
+    }
+}
+
+
+/**
+ * @param $logfile
+ * @return array
+ *  --> ['gameIsFinished'] -> Is the match already finished?
+ *  --> ['players'] -> Contains the players array
+ *  --> ['teams'] -> Contains the teams array
+ */
 function analyseLogFile($logfile)   {
 
     $gameIsFinished = false;
@@ -25,7 +61,7 @@ function analyseLogFile($logfile)   {
     //['assists'] -> Number of assists
     //['deaths'] -> Number of deaths
     //['headshots'] -> Number of headshots
-    //['teamkilss'] -> Number of teamkills
+    //['teamkills'] -> Number of teamkills
     //['damage'] -> Amount of damage dealt in the match
     /////////////////////////////////////////////
     $teams = array();
@@ -68,5 +104,8 @@ function analyseLogFile($logfile)   {
         }
     }
 
-    print_r($teams[2]);
+    return array(   "gameIsFinished" => $gameIsFinished,
+                    "players" => $players,
+                    "teams" => $teams
+                );
 }
