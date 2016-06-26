@@ -9,9 +9,9 @@ ini_set("auto_detect_line_endings", true);
 
 analyseAllLogFilesInDirectory();
 function analyseAllLogFilesInDirectory()    {
-    $files = glob("*.log", GLOB_BRACE);
+    $files = glob("warmod/[!_]*.log", GLOB_NOSORT);
 
-//Define your database settings here
+//Define your Database login here
     $mysqlConnection = new mysqli($servername, $username, $password, $dbname);
 
     foreach($files as $fileName) {
@@ -21,18 +21,19 @@ function analyseAllLogFilesInDirectory()    {
 
         if ($mysqlRow->num_rows == 0) {
             $result = analyseLogFile($logfile);
+            if($result['gameIsFinished']) {
+                $mysqlConnection->query("INSERT INTO warMod_matches (fileName, gameIsFinished) VALUES ('" . substr($fileName, 0, -4) . "', " . $result['gameIsFinished'] . ")");
+                $warMod_matchId = $mysqlConnection->insert_id;
 
-            $mysqlConnection->query("INSERT INTO warMod_matches (fileName, gameIsFinished) VALUES ('".substr($fileName, 0, -4)."', ".$result['gameIsFinished'].")");
-            $warMod_matchId = $mysqlConnection->insert_id;
+                $warMod_teamIds = array();
+                foreach ($result['teams'] as $team) {
+                    $mysqlConnection->query("INSERT INTO warMod_teams (matchId, name, team, score) VALUES (" . $warMod_matchId . ", '" . $team['name'] . "', " . $team['team'] . ", " . $team['score'] . ")");
+                    $warMod_teamIds[$team['team']] = $mysqlConnection->insert_id;
+                }
 
-            $warMod_teamIds = array();
-            foreach($result['teams'] as $team)  {
-                $mysqlConnection->query("INSERT INTO warMod_teams (matchId, name, team, score) VALUES (".$warMod_matchId.", '".$team['name']."', ".$team['team'].", ".$team['score'].")");
-                $warMod_teamIds[$team['team']] = $mysqlConnection->insert_id;
-            }
-
-            foreach($result['players'] as $player)  {
-                $mysqlConnection->query("INSERT INTO warMod_players (matchId, teamId, name, userId, uniqueId, team, kills, assists, deaths, headshots, teamkills, damage) VALUES (".$warMod_matchId.", ".$warMod_teamIds[$player['team']].", '".$player['name']."', ".$player['userId'].", '".$player['uniqueId']."', ".$player['team'].", ".$player['kills'].", ".$player['assists'].", ".$player['deaths'].", ".$player['headshots'].", ".$player['teamkills'].", ".$player['damage'].")");
+                foreach ($result['players'] as $player) {
+                    $mysqlConnection->query("INSERT INTO warMod_players (matchId, teamId, name, userId, uniqueId, team, kills, assists, deaths, headshots, teamkills, damage) VALUES (" . $warMod_matchId . ", " . $warMod_teamIds[$player['team']] . ", '" . $player['name'] . "', " . $player['userId'] . ", '" . $player['uniqueId'] . "', " . $player['team'] . ", " . $player['kills'] . ", " . $player['assists'] . ", " . $player['deaths'] . ", " . $player['headshots'] . ", " . $player['teamkills'] . ", " . $player['damage'] . ")");
+                }
             }
         }
     }
